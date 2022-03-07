@@ -12,11 +12,17 @@ import java.io.IOException;
  **/
 public class CsvUtil {
     public static Object[][] getTestData(String filepath)throws IOException {
-        Object[][] res=new Object[11][3];
+        Object[][] res=null;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(filepath));
             String line = null;
             int i=0;
+            while((line=reader.readLine())!=null){
+                i++;
+            }
+            res=new Object[i][2];
+            reader = new BufferedReader(new FileReader(filepath));
+            i=0;
             while((line=reader.readLine())!=null){
                 String item[] = line.split(",");//CSV格式文件为逗号分隔符文件，这里根据逗号切分
                 res[i]=item;

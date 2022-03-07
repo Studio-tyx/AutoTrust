@@ -1,0 +1,33 @@
+int a=0;,a,write_a(0);
+b=a+a;,a,b=read_a()+read_a();
+b=a;,a,b=read_a();
+a=a+a;,a,write_a(read_a()+read_a());
+a=b;,a,write_a(b);
+a=b+1;,a,write_a(b+1);
+if(a>=b),a,if(read_a()>=b)
+a*=b;,a,write_a(read_a()*b);
+c=b;,a,c=b;
+b=read_a()+read_a();,b,write_b(read_a()+read_a());
+write_a(b+1);,b,write_a(read_b()+1);
+b=read_a();,a,b=read_a();
+int a = 0;,a,write_a(0);
+b = a + a;,a,b = read_a() + read_a();
+b = a;,a,b = read_a();
+a = a + a;,a,write_a( read_a() + read_a() );
+a = b;,a,write_a(b);
+a = b + 1;,a,write_a( b + 1 );
+if( a >= b ),a,if(read_a() >= b)
+a *= b;,a,write_a(read_a() * b);
+c = b;,a,c = b;
+b = read_a() + read_a();,b,write_b( read_a() + read_a() );
+write_a( b + 1 );,b,write_a( read_b() + 1 );
+a++;,a,write_a(read_a()+1);
+b=a++;,a,b=read_a();write_a(read_a()+1);
+a--;,a,write_a(read_a()-1);
+b=a--;,a,b=read_a();write_a(read_a()-1);
+--a;,a,write_a(read_a()-1);
+b=--a;,a,write_a(read_a()-1);b=read_a();
+if(a++),a,if(read_a())write_a(read_a()+1);
+if(a++){,a,if(read_a()){write_a(read_a()+1);
+if(++a),a,if(read_a())write_a(read_a()+1);
+if(a++){,a,if(read_a()){write_a(read_a()+1);

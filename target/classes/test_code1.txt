@@ -1,0 +1,23 @@
+#include<stdio.h>
+
+peripheral@TrustZone:PA,PC
+
+void test1(){
+	hey;
+}
+
+void test2()
+{
+	hey;
+}
+
+void test3(){
+	hey;
+}
+
+
+
+int main()
+{
+    printf("hello, world!");
+}

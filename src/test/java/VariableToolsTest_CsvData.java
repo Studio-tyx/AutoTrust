@@ -8,7 +8,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 public class VariableToolsTest_CsvData {
-    public static String filePath = "src/main/resources/data.csv";
+    public static String filePath = "src/main/resources/variable.csv";
 
     @DataProvider(name = "testData")
     public static Object[][] words() throws IOException {

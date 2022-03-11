@@ -6,7 +6,11 @@
  **/
 public class test {
     public static void main(String[] args) {
-        String str="hey  ";
-        System.out.println(str.endsWith("y"));
+        String statement="abc";
+        String variable="b";
+        int frontIndex=statement.indexOf(variable);
+        int backIndex=frontIndex+variable.length();
+        System.out.println(statement.charAt(frontIndex));
+        System.out.println(statement.charAt(backIndex));
     }
 }

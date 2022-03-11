@@ -2,22 +2,27 @@
 
 peripheral@TrustZone:PA,PC
 
-void test1(){
+void test1@TrustZone(){
 	hey;
 }
 
 void test2()
 {
+	test1();
+}
+
+void test3@TrustZone()
+{
 	hey;
 }
 
-void test3(){
-	hey;
+void test4(){
+    PA=1;
 }
-
-
 
 int main()
 {
-    printf("hello, world!");
+    int a@TrustZone=10;
+    test3();
+    test4();
 }

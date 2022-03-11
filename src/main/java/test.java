@@ -1,3 +1,6 @@
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * @author TYX
  * @name test
@@ -6,11 +9,13 @@
  **/
 public class test {
     public static void main(String[] args) {
-        String statement="abc";
-        String variable="b";
-        int frontIndex=statement.indexOf(variable);
-        int backIndex=frontIndex+variable.length();
-        System.out.println(statement.charAt(frontIndex));
-        System.out.println(statement.charAt(backIndex));
+        String v="a";
+        String statement="a --;";
+//        Pattern p = Pattern.compile("a\\s*\\+\\+");
+//        // get a matcher object
+//        Matcher m = p.matcher(statement);
+//        statement = m.replaceAll("inc_a_");
+        statement=Pattern.compile(v+"\\s*--").matcher(statement).replaceAll("inc_a_");
+        System.out.println(statement);
     }
 }

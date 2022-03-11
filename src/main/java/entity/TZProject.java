@@ -1,6 +1,7 @@
 package entity;
 
 import com.sun.org.apache.xpath.internal.operations.VariableSafeAbsRef;
+import tools.CharacterTools;
 import tools.VariableTools;
 
 import java.util.*;
@@ -147,28 +148,6 @@ public class TZProject {
         }
     }
 
-    private boolean isIdentified(char ch){
-        if(ch>='a'&&ch<='z') return true;
-        else if(ch>='0'&&ch<='9') return true;
-        else if(ch=='_') return true;
-        else return false;
-    }
-
-    private boolean containsVariable(String statement,String variable){
-        boolean res=false;
-        if(!statement.contains(variable)) return false;
-        if(statement.indexOf(variable)!=statement.lastIndexOf(variable)){
-            // many variables  int i=0;
-        }else {
-            // variable前后都得不是字母or数字or_
-            int frontIndex=statement.indexOf(variable);
-            int backIndex=frontIndex+variable.length();
-            if(!isIdentified(statement.charAt(frontIndex-1))&&!isIdentified(statement.charAt(backIndex))){
-                res=true;
-            }
-        }
-        return res;
-    }
 
     private void addRW(VariableInfo variableInfo){
         int voidIndex=0;
@@ -182,17 +161,41 @@ public class TZProject {
         secureCodes.add(voidIndex,new Block("void",true,RWCodes));
     }
 
+    private void addIncDec(String code, VariableInfo vi){
+        String[] names={"inc_left_","inc_right","dec_left_","dec_right"};
+        String[] bodies={vi.type+" inc_left_"+vi.name+"(){++"+vi.name+";return "+vi.name+";}",
+                vi.type+" inc_right_"+vi.name+"(){++"+vi.name+";return "+vi.name+"-1;}",
+                vi.type+" dec_left_"+vi.name+"(){--"+vi.name+";return "+vi.name+";}",
+                vi.type+" dec_right_"+vi.name+"(){--"+vi.name+";return "+vi.name+"-1;}"};
+        for(int i=0;i<names.length;i++){
+            if(code.contains(names[i])){
+                int voidIndex=0;
+                for(;voidIndex<secureCodes.size();voidIndex++){
+                    if(!secureCodes.get(voidIndex).name.equals("void")) break;
+                }
+                List<String> RWCodes=new ArrayList<String>();
+                RWCodes.add(bodies[i]);
+                secureCodes.add(voidIndex,new Block("void",true,RWCodes));
+            }
+        }
+    }
+
     public void separateVariables(){
         for(Block block:nonSecureCodes){
             for(int i=0;i<block.codes.size();i++){
                 String code=block.codes.get(i);
                 for(VariableInfo vi:variables){
                     String variable=vi.name;
-                    if(containsVariable(code,variable)) {
+                    if(CharacterTools.containsVariable(code,variable)) {
                         VariableTools variableTools = new VariableTools();
                         code = variableTools.replaceOperator(code, variable);
                         block.codes.set(i,code);
-                        addRW(vi);
+                        if(code.contains("inc_")||code.contains("dec_")){
+                            addIncDec(code,vi);
+                        }
+                        else{
+                            addRW(vi);
+                        }
                     }
                 }
             }

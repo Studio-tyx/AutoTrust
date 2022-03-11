@@ -23,6 +23,7 @@ void test4(){
 int main()
 {
     int a@TrustZone=10;
+    a++;
     test3();
     test4();
 }

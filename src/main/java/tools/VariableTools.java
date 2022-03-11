@@ -1,5 +1,7 @@
 package tools;
 
+import java.util.regex.Pattern;
+
 /**
  * @author TYX
  * @name tools.VariableTools
@@ -25,17 +27,18 @@ public class VariableTools {
 
     public String replaceOperator(String statement, String variable) {
         String res = statement;
-        String[] former={statement+"++",statement+"--","++"+statement,"--"+statement};
-        String[] after={"right_inc_","right_dec_","left_inc_","left_dec_"};
-        if (statement.contains(variable)) {
-            // if has inc or dec for variable ==> replace(" ") and split(variable) then endWith or startWith
-            // or contains "variable++ or variable--"
-            for(int i=0;i<former.length;i++){
-                String noSpace=statement.replace(" ","");
-                if(statement.replace(" ","").contains(former[i])){
-                    //replace but blank space?
-                }
+        if (CharacterTools.containsVariable(statement,variable)) {
+            if(statement.contains("++")||statement.contains("--")){
+                statement= Pattern.compile(variable+"\\s*\\+\\+").matcher(statement)
+                        .replaceAll("inc_right_"+variable+"()");
+                statement= Pattern.compile(variable+"\\s*--").matcher(statement)
+                        .replaceAll("dec_right_"+variable+"()");
+                statement= Pattern.compile("\\+\\+\\s*"+variable).matcher(statement)
+                        .replaceAll("inc_left_"+variable+"()");
+                statement= Pattern.compile("--\\s*"+variable).matcher(statement)
+                        .replaceAll("dec_left_"+variable+"()");
             }
+            if(!CharacterTools.containsVariable(statement,variable)) return statement;
             if (statement.contains("=")) {
                 int assign_no = statement.indexOf('=');
                 String left = statement.substring(0, assign_no);   // a+,=b a,=b

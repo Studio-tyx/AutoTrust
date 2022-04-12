@@ -12,33 +12,40 @@ public class Block {
     public String name;
     private boolean isSecure;
     public List<String> codes;
+    private String annotation="@TrustZone";
 
     public Block(String name, List<String> codes) {
         this.name = name;
         this.codes = codes;
-        this.isSecure=false;
+        this.isSecure = false;
     }
 
     public Block(String name, boolean isSecure, List<String> codes) {
         this.name = name;
         this.codes = codes;
-        this.isSecure=isSecure;
+        this.isSecure = isSecure;
     }
 
     @Override
     public String toString() {
-        String res="Block name='" + name + '\'' + ", isSecure=" + isSecure + ", codes:\n";
-        for(String code:codes){
-            res+=code+"\n";
+        String res = "Block name='" + name + '\'' + ", isSecure=" + isSecure + ", codes:\n";
+        for (String code : codes) {
+            res += code + "\n";
         }
         return res;
     }
 
-    public void setSecure() {
-        isSecure = true;
-    }
 
     public boolean isSecure() {
         return isSecure;
     }
+
+    public void setSecure() {
+        if(name.contains(annotation)){
+            isSecure = true;
+            name=name.replace(annotation,"");
+            codes.set(0,codes.get(0).replace(annotation,""));
+        }
+    }
+
 }

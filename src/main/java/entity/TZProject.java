@@ -1,7 +1,9 @@
 package entity;
 
+import com.sun.org.apache.xpath.internal.functions.FuncExtFunction;
 import com.sun.org.apache.xpath.internal.operations.VariableSafeAbsRef;
 import tools.CharacterTools;
+import tools.FunctionTools;
 import tools.VariableTools;
 
 import java.util.*;
@@ -19,19 +21,15 @@ public class TZProject {
     private List<VariableInfo> variables;   // key=>identification value=>type
     private List<Block> secureCodes;
     private List<Block> nonSecureCodes;
-    private List<String> codes;
-    private String annotation="@TrustZone";
+    private String proAnnotation="@TrustZone";
+    private String NSCAnnotation="__NONSECURE_ENTRY";
+    private List<FunctionInfo> functions;
 
-    public TZProject(FormerCode formerCode) {
-        blocks =new LinkedList<Block>();
-        peripherals= formerCode.getPeripherals();
-        secureCodes=new LinkedList<Block>();
-        nonSecureCodes=new LinkedList<Block>();
-        codes=formerCode.getCodes();
-        variables=new ArrayList<VariableInfo>();
+    public TZProject() {
+
     }
 
-    private Map<Integer,String> initNameMap(){
+    private Map<Integer,String> initNameMap(List<String> codes){
         Map<Integer,String> nameMap=new LinkedHashMap<Integer, String>();
         for(int i=0;i<codes.size();i++){
             String code=codes.get(i);
@@ -52,7 +50,7 @@ public class TZProject {
         return nameMap;
     }
 
-    private List<String> moveFormerCode(int start,int end){
+    private List<String> moveFormerCode(List<String> codes,int start,int end){
         List<String> functionCodes=new LinkedList<String>();
         for(int j=start;j<end;j++){
             functionCodes.add(codes.get(j));
@@ -60,87 +58,137 @@ public class TZProject {
         return functionCodes;
     }
 
-    public void initFunctions(){
-        Map<Integer,String> nameMap=initNameMap();
+    public void initFunctions(FormerCode formerCode){
+        blocks =new LinkedList<Block>();
+        secureCodes=new LinkedList<Block>();
+        nonSecureCodes=new LinkedList<Block>();
+        List<String> codes=formerCode.getCodes();
+        peripherals= formerCode.getPeripherals();
+        Map<Integer,String> nameMap=initNameMap(codes);
         Set<Integer> codeNos = nameMap.keySet();
         int i=0,formerCodeIndex=0;
         String formerName=null;
         for(Integer codeNo:codeNos){
             if(i==0){
                 if(codeNo!=0){  // #include<stdio.h>
-                    Block block =new Block("void",moveFormerCode(formerCodeIndex,codeNo));
+                    Block block =new Block("void",moveFormerCode(codes,formerCodeIndex,codeNo));
                     blocks.add(block);
                     formerCodeIndex=codeNo;
                 }
             }
             else{
-                Block block =new Block(formerName,moveFormerCode(formerCodeIndex,codeNo));
+                Block block =new Block(formerName,moveFormerCode(codes,formerCodeIndex,codeNo));
                 blocks.add(block);
                 formerCodeIndex=codeNo;
             }
             formerName=nameMap.get(codeNo);
             i++;
         }
-        Block block =new Block(formerName,moveFormerCode(formerCodeIndex,codes.size()));
+        Block block =new Block(formerName,moveFormerCode(codes,formerCodeIndex,codes.size()));
         blocks.add(block);
     }
 
-    public void identifySecure(){
+    public void identifyFunction(){
         for(Block block:blocks) {
-            if (block.name.contains(annotation)) {
-                block.name=block.name.replace(annotation, "");
-                block.codes.set(0,block.codes.get(0).replace(annotation,""));
-                block.setSecure();
-            }
+            block.setSecure();
         }
     }
 
-    private void addSecure(Block block){
+    private void addSecureFunction(Block block){
         List<String> codes1=new ArrayList<String>();
-        codes1.add("__NONSECURE_ENTRY");
+        codes1.add(NSCAnnotation);
         codes1.addAll(block.codes);
         secureCodes.add(new Block(block.name, true, codes1));
-        String externStr="extern "+block.codes.get(0).replace(annotation,"")
+        String externStr="extern "+block.codes.get(0).replace(proAnnotation,"")
                 .replace("{","")+";";
         List<String> externList=new ArrayList<String>();
         externList.add(externStr);
         nonSecureCodes.add(new Block("extern",externList));
     }
 
-    public void separateSecure(){
+    public void separateSecureFunction(){
+        functions=new ArrayList<FunctionInfo>();
         for(Block block:blocks){
             if(block.name.equals("void")){
                 secureCodes.add(block);
             }
             else{
                 if (block.isSecure()) {
-                    addSecure(block);
+                    setOtherFunction(block);
+                    addSecureFunction(block);
                 }
                 else {
-                    boolean hasPeripheral=false;
-                    for(String code:block.codes){
-                        for(String peripheral:peripherals){
-                            if(code.contains(peripheral)) hasPeripheral=true;
-                        }
-                    }
-                    if(hasPeripheral){
-                        addSecure(block);
-                    }
-                    else {
-                        nonSecureCodes.add(block);
-                    }
+                    functions.add(new FunctionInfo(block.name,false));
+                    nonSecureCodes.add(block);
                 }
             }
         }
     }
 
+    public void setOtherFunction(Block block){
+        int i=0;
+        for(;i<block.codes.size();i++){
+            String code=block.codes.get(i);
+//        for(String code:block.codes){
+            for(FunctionInfo functionInfo:functions){
+                if(code.contains(functionInfo.functionName)){
+                    if(functionInfo.pfName!=null){
+                        code=code.replace(functionInfo.functionName, functionInfo.pfName);
+                    }
+                    else{
+                        setPf(functionInfo.functionName);
+                        functionInfo.pfName=functionInfo.functionName+"_pf";
+                        code=code.replace(functionInfo.functionName, functionInfo.functionName+"_pf");
+                    }
+                    block.codes.set(i,code);
+                }
+            }
+        }
+    }
+
+    public void setPf(String functionName){
+        int blockNo=0;
+        for(;blockNo< secureCodes.size();blockNo++){
+            Block sBlock=secureCodes.get(blockNo);
+            if(!sBlock.name.equals("void")) break;
+        }
+        List<String> tempCodes=new ArrayList<String>();
+        tempCodes.add("static NonSecure_funcptr "+functionName+"_pf = (NonSecure_funcptr)NULL;");
+        tempCodes.add(NSCAnnotation);
+        tempCodes.add("int32_t "+functionName+"_callback(NonSecure_funcptr *callback){");
+        tempCodes.add("\t"+functionName+"_pf = (NonSecure_funcptr)cmse_nsfptr_create(callback);");
+        tempCodes.add("\treturn 0;");
+        tempCodes.add("}");
+        secureCodes.add(blockNo,new Block("void",true,tempCodes));
+
+        blockNo=0;
+        for(;blockNo< nonSecureCodes.size();blockNo++){
+            Block nsBlock=nonSecureCodes.get(blockNo);
+            if(!nsBlock.name.equals("void")) break;
+        }
+        tempCodes=new ArrayList<String>();
+        tempCodes.add("extern int32_t "+functionName+"_callback(int32_t (*)(uint32_t));");
+        nonSecureCodes.add(blockNo,new Block("void",false,tempCodes));
+        for(;blockNo< blocks.size();blockNo++){
+            Block nsBlock=blocks.get(blockNo);
+            if(nsBlock.name.equals("main")){
+                String callback="\t"+functionName+"_callback(&"+ functionName+");";
+                if(nsBlock.codes.get(0).contains("{"))nsBlock.codes.add(1,callback);
+                else nsBlock.codes.add(2,callback);
+                blocks.set(blockNo,nsBlock);
+                break;
+            }
+        }
+    }
+
     public void identifyVariables(){
+        variables=new ArrayList<VariableInfo>();
         for(Block block:blocks){
             for(int j=0;j<block.codes.size();j++){
                 String code=block.codes.get(j);
-                if(code.contains(annotation)){
+                if(code.contains(proAnnotation)){
                     VariableInfo variableInfo=new VariableInfo(code);
-                    block.codes.set(j,code.replace(annotation,""));
+                    block.codes.set(j,code.replace(proAnnotation,""));
                     variables.add(variableInfo);
 //                    System.out.println(variableInfo);
                 }
@@ -156,7 +204,9 @@ public class TZProject {
         }
         List<String> RWCodes=new ArrayList<String>();
         RWCodes.add(variableInfo.declaration);
+        RWCodes.add(NSCAnnotation);
         RWCodes.add(variableInfo.type+" read_"+variableInfo.name+"(){return "+variableInfo.name +";}");
+        RWCodes.add(NSCAnnotation);
         RWCodes.add("void write_"+variableInfo.name+"("+variableInfo.type+" value){" +variableInfo.name+"=value;}");
         secureCodes.add(voidIndex,new Block("void",true,RWCodes));
     }

@@ -1,0 +1,21 @@
+#include<stdio.h>
+
+void test1(){
+	hey;
+}
+
+void test2@TrustZone()
+{
+	test1();
+}
+
+void test3@TrustZone()
+{
+	test2();
+}
+
+int main()
+{
+    test3();
+    test4();
+}

@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,13 +11,17 @@ import java.util.regex.Pattern;
  **/
 public class test {
     public static void main(String[] args) {
-        String v="a";
-        String statement="a --;";
-//        Pattern p = Pattern.compile("a\\s*\\+\\+");
-//        // get a matcher object
-//        Matcher m = p.matcher(statement);
-//        statement = m.replaceAll("inc_a_");
-        statement=Pattern.compile(v+"\\s*--").matcher(statement).replaceAll("inc_a_");
-        System.out.println(statement);
+        List<String> list=new ArrayList<String>();
+        System.out.println(list.size());
+        list.add("a");
+        System.out.println(list.indexOf("a"));
+        System.out.println("----------");
+        System.out.println(list.size());
+        list.add("b");
+        System.out.println(list.indexOf("b"));
+        System.out.println("----------");
+        System.out.println(list.size());
+        list.add("c");
+        System.out.println(list.indexOf("b"));
     }
 }

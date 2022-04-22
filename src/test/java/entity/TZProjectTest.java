@@ -54,4 +54,19 @@ public class TZProjectTest {
         tzProject.separateVariables();
         tzProject.showProject();
     }
+
+    @Test
+    public void testIdentifyLevel() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        formerCode.init("D:\\Languages\\Maven\\AutoTrust\\src\\main\\resources\\test_code2.txt");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.showProject();
+        //tzProject.showBlocks();
+    }
 }

@@ -23,7 +23,7 @@ public class TZProject {
     private List<Block> nonSecureCodes;
     private String proAnnotation="@TrustZone";
     private String NSCAnnotation="__NONSECURE_ENTRY";
-    private List<FunctionInfo> functions;
+    private List<FunctionInfo> s2nsFunctions;
 
     public TZProject() {
 
@@ -92,13 +92,28 @@ public class TZProject {
         for(Block block:blocks) {
             block.setSecure();
         }
+        for(Block block:blocks){
+            if(block.level==2) setBlockAll(block);
+        }
+    }
+
+    private void setBlockAll(Block block){
+        block.level=2;
+        for(String code:block.codes){
+            for(Block other:blocks){
+                if(!other.name.equals(block.name)) {
+                    if(code.contains(other.name+"(")&&other.level!=2)
+                        setBlockAll(other);
+                }
+            }
+        }
     }
 
     private void addSecureFunction(Block block){
         List<String> codes1=new ArrayList<String>();
         codes1.add(NSCAnnotation);
         codes1.addAll(block.codes);
-        secureCodes.add(new Block(block.name, true, codes1));
+        secureCodes.add(new Block(block.name, block.level, codes1));
         String externStr="extern "+block.codes.get(0).replace(proAnnotation,"")
                 .replace("{","")+";";
         List<String> externList=new ArrayList<String>();
@@ -107,18 +122,18 @@ public class TZProject {
     }
 
     public void separateSecureFunction(){
-        functions=new ArrayList<FunctionInfo>();
+        s2nsFunctions=new ArrayList<FunctionInfo>();
         for(Block block:blocks){
             if(block.name.equals("void")){
                 secureCodes.add(block);
             }
             else{
-                if (block.isSecure()) {
-                    setOtherFunction(block);
+                if (block.getLevel()!=0) {
                     addSecureFunction(block);
+                    if(block.getLevel()==1) setOtherFunction(block);
                 }
                 else {
-                    functions.add(new FunctionInfo(block.name,false));
+                    s2nsFunctions.add(new FunctionInfo(block.name,0));
                     nonSecureCodes.add(block);
                 }
             }
@@ -130,7 +145,7 @@ public class TZProject {
         for(;i<block.codes.size();i++){
             String code=block.codes.get(i);
 //        for(String code:block.codes){
-            for(FunctionInfo functionInfo:functions){
+            for(FunctionInfo functionInfo:s2nsFunctions){
                 if(code.contains(functionInfo.functionName)){
                     if(functionInfo.pfName!=null){
                         code=code.replace(functionInfo.functionName, functionInfo.pfName);
@@ -138,7 +153,8 @@ public class TZProject {
                     else{
                         setPf(functionInfo.functionName);
                         functionInfo.pfName=functionInfo.functionName+"_pf";
-                        code=code.replace(functionInfo.functionName, functionInfo.functionName+"_pf");
+                        code=code.replace(functionInfo.functionName+"(", functionInfo.functionName+"_pf(1u");
+                        //test1(); => test1_pf(1u);
                     }
                     block.codes.set(i,code);
                 }
@@ -159,7 +175,7 @@ public class TZProject {
         tempCodes.add("\t"+functionName+"_pf = (NonSecure_funcptr)cmse_nsfptr_create(callback);");
         tempCodes.add("\treturn 0;");
         tempCodes.add("}");
-        secureCodes.add(blockNo,new Block("void",true,tempCodes));
+        secureCodes.add(blockNo,new Block("void",2,tempCodes));
 
         blockNo=0;
         for(;blockNo< nonSecureCodes.size();blockNo++){
@@ -168,7 +184,7 @@ public class TZProject {
         }
         tempCodes=new ArrayList<String>();
         tempCodes.add("extern int32_t "+functionName+"_callback(int32_t (*)(uint32_t));");
-        nonSecureCodes.add(blockNo,new Block("void",false,tempCodes));
+        nonSecureCodes.add(blockNo,new Block("void",0,tempCodes));
         for(;blockNo< blocks.size();blockNo++){
             Block nsBlock=blocks.get(blockNo);
             if(nsBlock.name.equals("main")){
@@ -208,7 +224,7 @@ public class TZProject {
         RWCodes.add(variableInfo.type+" read_"+variableInfo.name+"(){return "+variableInfo.name +";}");
         RWCodes.add(NSCAnnotation);
         RWCodes.add("void write_"+variableInfo.name+"("+variableInfo.type+" value){" +variableInfo.name+"=value;}");
-        secureCodes.add(voidIndex,new Block("void",true,RWCodes));
+        secureCodes.add(voidIndex,new Block("void",2,RWCodes));
     }
 
     private void addIncDec(String code, VariableInfo vi){
@@ -225,7 +241,7 @@ public class TZProject {
                 }
                 List<String> RWCodes=new ArrayList<String>();
                 RWCodes.add(bodies[i]);
-                secureCodes.add(voidIndex,new Block("void",true,RWCodes));
+                secureCodes.add(voidIndex,new Block("void",2,RWCodes));
             }
         }
     }
@@ -252,8 +268,84 @@ public class TZProject {
         }
     }
 
+    public void change(){
+        changePeripheralFun();
+        changeTZHeader();
+        changePeripheralHeaders();
+        addSecureMain();
+    }
+
+    private void changePeripheralFun(){
+        // TZ_GPIO_set_mode => TZ_GPIO_secure_set_mode
+        for(Block secure:secureCodes){
+            for(int i=0;i<secure.codes.size();i++){
+                String code=secure.codes.get(i);
+                if(code.contains("TZ_")){
+                    code=code.replace("TZ_","TZ_s_");
+                    secure.codes.set(i,code);
+                }
+            }
+        }
+    }
+
+    private void changeTZHeader(){
+        boolean find=false;
+        for(Block block:secureCodes){
+            if(find) break;
+            for(int i=0;i<block.codes.size();i++){
+                String code=block.codes.get(i);
+                if(code.contains("TZ.h")){
+                    block.codes.set(i,code.replace("TZ.h","TZ_s.h"));
+                    find=true;
+                    break;
+                }
+            }
+        }
+        List<String> code=new ArrayList<String>();
+        code.add("#include \"TZ_ns.h\"");
+        nonSecureCodes.add(0,new Block("void",2,code));
+    }
+
+    private void changePeripheralHeaders(){
+        boolean GPIO_use=false,UART_use=false;
+        for(Block block:blocks){
+            for(String code:block.codes) {
+                if (code.contains("TZ_GPIO")) GPIO_use = true;
+                if (code.contains("TZ_UART")) UART_use = true;
+                if(GPIO_use&&UART_use)break;
+            }
+        }
+        List<String> sAdd=new ArrayList<String>();
+        List<String> nsAdd=new ArrayList<String>();
+        if(GPIO_use){
+            sAdd.add("#include \"TZ_GPIO_s.h\"");
+            nsAdd.add("#include \"TZ_GPIO_ns.h\"");
+        }
+        if(UART_use){
+            sAdd.add("#include \"TZ_UART_s.h\"");
+            nsAdd.add("#include \"TZ_UART_ns.h\"");
+        }
+        if(!sAdd.isEmpty()) {
+            secureCodes.add(0, new Block("void", 2, sAdd));
+            nonSecureCodes.add(0, new Block("void", 0, nsAdd));
+        }
+    }
+
+    private void addSecureMain(){
+        // find ns main
+        // look for each statement before ()
+        // void&&!(ns&&user)&&
+        // until code not permit move to s main
+    }
+
     public List<Block> getBlocks() {
         return blocks;
+    }
+
+    public void showBlocks(){
+        for(Block block:blocks){
+            System.out.println(block);
+        }
     }
 
     public void showProject(){

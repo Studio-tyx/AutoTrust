@@ -1,21 +1,31 @@
-#include<stdio.h>
+#include "TZ.h"
 
 void test1(){
-	hey;
+	TZ_UART_set_secure();
 }
 
-void test2@TrustZone()
+void test2@TrustZoneOnly()
 {
-	test1();
+	test1();    // protect
 }
 
-void test3@TrustZone()
+void test3()
 {
-	test2();
+	TZ_GPIO_set_mode();
+}
+
+void test4@TrustZoneOnly()
+{
+    test3();
+}
+
+void test5@TrustZoneAll()
+{
+    test2();    //protect
 }
 
 int main()
 {
     test3();
-    test4();
+    test2();
 }

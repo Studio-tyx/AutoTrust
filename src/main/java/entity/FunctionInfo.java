@@ -8,12 +8,12 @@ package entity;
  **/
 public class FunctionInfo {
     public String functionName;
-    public boolean isSecure;
+    public int level;
     public String pfName;
 
-    public FunctionInfo(String functionName, boolean isSecure) {
+    public FunctionInfo(String functionName, int level) {
         this.functionName = functionName;
-        this.isSecure = isSecure;
+        this.level = level;
         pfName=null;
     }
 

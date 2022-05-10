@@ -1,0 +1,25 @@
+#include "TZ.h"
+
+void SYS_Init@TrustZoneAll(){   //s
+    CLK->PLLCTL = CLK_PLLCTL_128MHz_HIRC;
+	TZ_UART_set_secure();
+}
+
+void test1()    // ns
+{
+	TZ_GPIO_write(0,10,0);
+    CLK_SysTickLongDelay(200000);
+    TZ_GPIO_write(0,10,1);
+    CLK_SysTickLongDelay(200000);
+}
+
+int main()
+{
+    SYS_UnlockReg();
+    SYS_Init();
+    int GPIO_security[8]={1,0,0,0,0,0,0,0};
+    TZ_GPIO_set_secure(GPIO_security);
+    TZ_GPIO_set_mode(0, BIT11 | BIT10, GPIO_MODE_OUTPUT);
+    int a@TrustZone;
+    test1();
+}

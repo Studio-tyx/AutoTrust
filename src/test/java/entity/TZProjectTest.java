@@ -61,12 +61,45 @@ public class TZProjectTest {
         formerCode.init("D:\\Languages\\Maven\\AutoTrust\\src\\main\\resources\\test_code2.txt");
         TZProject tzProject=new TZProject();
         tzProject.initFunctions(formerCode);
+//        tzProject.showBlocks();
         tzProject.identifyFunction();
         tzProject.separateSecureFunction();
         tzProject.identifyVariables();
         tzProject.separateVariables();
         tzProject.change();
         tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+
+    @Test
+    public void testTrueSample() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        formerCode.init("D:\\Languages\\Maven\\AutoTrust\\src\\main\\resources\\test_code3.txt");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+
+    @Test
+    public void testBlinky() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        String path="D:\\Languages\\Maven\\AutoTrust\\code example\\Audio\\";
+        formerCode.init(path+"main.c");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.writeCode(path);
+        //tzProject.showProject();
         //tzProject.showBlocks();
     }
 }

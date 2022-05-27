@@ -16,7 +16,6 @@ import java.util.*;
  **/
 public class TZProject {
     private List<Block> blocks;
-    private List<String> peripherals;
     private List<VariableInfo> variables;   // key=>identification value=>type
     private List<Block> secureCodes;
     private List<Block> nonSecureCodes;
@@ -32,14 +31,14 @@ public class TZProject {
         Map<Integer, String> nameMap = new LinkedHashMap<Integer, String>();
         for (int i = 0; i < codes.size(); i++) {
             String code = codes.get(i);
-            String filterBlank = code.replace(" ", "");
+            String filterBlank = code.replace(" ", ""); // delete blank
             boolean hasFunction = false;
-            if (filterBlank.matches(".*\\(.*\\)\\{")) hasFunction = true;
+            if (filterBlank.matches(".*\\(.*\\)\\{")) hasFunction = true;   // (..){
             if (i < codes.size() - 1) {
                 if(codes.get(i+1).startsWith("{")){
-                    if(filterBlank.matches(".*\\(.*\\)\\s*//.*")||
-                            filterBlank.matches(".*\\(.*\\)\\s*/\\*.*\\*/")||
-                            filterBlank.matches(".*\\(.*\\).*"))
+                    if(filterBlank.matches(".*\\(.*\\)\\s*//.*")||  // (..) //
+                            filterBlank.matches(".*\\(.*\\)\\s*/\\*.*\\*/")||   // (..) /*
+                            filterBlank.matches(".*\\(.*\\).*"))    // (..)
                         hasFunction=true;
                 }
             }
@@ -49,7 +48,7 @@ public class TZProject {
                 if(nameStart==-1)nameStart=0;
                 String functionName = code.substring(nameStart, left);
                 if(functionName.equals("while")||functionName.equals("for")||functionName.equals("if")){
-
+                    // has (){ but not block
                 }else{
                     functionName = functionName.replace(" ", "");
                     nameMap.put(i, functionName);
@@ -72,7 +71,6 @@ public class TZProject {
         secureCodes = new LinkedList<Block>();
         nonSecureCodes = new LinkedList<Block>();
         List<String> codes = formerCode.getCodes();
-        peripherals = formerCode.getPeripherals();
         Map<Integer, String> nameMap = initNameMap(codes);
         Set<Integer> codeNos = nameMap.keySet();
         int i = 0, formerCodeIndex = 0;
@@ -98,19 +96,19 @@ public class TZProject {
 
     public void identifyFunction() {
         for (Block block : blocks) {
-            block.setSecure();
+            block.setSecure();  // if block has @TrustZone, set block secure
         }
         for (Block block : blocks) {
-            if (block.level == 2) setBlockAll(block);
+            if (block.level == 2) setBlockAll(block);   // @TrustZoneAll
         }
     }
 
-    private void setBlockAll(Block block) {
+    private void setBlockAll(Block block) { // recursion
         block.level = 2;
         for (String code : block.codes) {
-            for (Block other : blocks) {
-                if (!other.name.equals(block.name)) {
-                    if (code.contains(other.name + "(") && other.level != 2)
+            for (Block other : blocks) {    // other self-defined functions
+                if (!other.name.equals(block.name)) {   // if call other ... function
+                    if (code.contains(other.name + "(") && other.level != 2)    // other function is not @TZAll
                         setBlockAll(other);
                 }
             }
@@ -119,14 +117,14 @@ public class TZProject {
 
     private void addSecureFunction(Block block) {
         List<String> codes1 = new ArrayList<String>();
-        codes1.add(NSCAnnotation);
-        codes1.addAll(setOtherFunction(block).codes);
-        secureCodes.add(new Block(block.name, block.level, codes1));
+        codes1.add(NSCAnnotation);  // __NONSECURE_ENTRY
+        codes1.addAll(setOtherFunction(block).codes);   // secure code
+        secureCodes.add(new Block(block.name, block.level, codes1));    // add secure block to secure code
         String externStr = "extern " + block.codes.get(0).replace(proAnnotation, "")
-                .replace("{", "") + ";";
+                .replace("{", "") + ";";    // extern secure functions
         List<String> externList = new ArrayList<String>();
         externList.add(externStr);
-        nonSecureCodes.add(new Block("extern", externList));
+        nonSecureCodes.add(new Block("extern", externList));    // non-secure code add extern statement
     }
 
     public void separateSecureFunction() {
@@ -134,29 +132,29 @@ public class TZProject {
         for (int i=0;i<blocks.size();i++) {
             Block block=blocks.get(i);
             if (block.name.equals("void")) {
-                secureCodes.add(block);
+                secureCodes.add(block); // secure code add headers
             } else {
                 if (block.getLevel() != 0) {
-                    addSecureFunction(block);
+                    addSecureFunction(block);   // secure code add secure block
 //                    if (block.getLevel() == 1) blocks.set(i,setOtherFunction(block));
                 } else {
-                    s2nsFunctions.add(new FunctionInfo(block.name, 0));
-                    nonSecureCodes.add(block);
+                    s2nsFunctions.add(new FunctionInfo(block.name, 0)); // ns function name
+                    nonSecureCodes.add(block);  // non-secure code add non-secure block
                 }
             }
         }
     }
 
-    public Block setOtherFunction(Block block) {
+    public Block setOtherFunction(Block block) { // some ns=>s transform
         int i = 0;
         for (; i < block.codes.size(); i++) {
             String code = block.codes.get(i);
 //        for(String code:block.codes){
-            for (FunctionInfo functionInfo : s2nsFunctions) {
+            for (FunctionInfo functionInfo : s2nsFunctions) {   // ns function names
                 if (code.contains(functionInfo.functionName)) {
-                    if (functionInfo.pfName != null) {
+                    if (functionInfo.pfName != null) {  // this ns function has been called once
                         code = code.replace(functionInfo.functionName, functionInfo.pfName);
-                    } else {
+                    } else {    // this ns function has not been called
                         setPf(functionInfo.functionName);
                         functionInfo.pfName = functionInfo.functionName + "_pf";
                         code = code.replace(functionInfo.functionName + "(", functionInfo.functionName + "_pf(1u");
@@ -178,7 +176,7 @@ public class TZProject {
         }
         List<String> tempCodes = new ArrayList<String>();
         tempCodes.add("static NonSecure_funcptr " + functionName + "_pf = (NonSecure_funcptr)NULL;");
-        tempCodes.add(NSCAnnotation);
+        tempCodes.add(NSCAnnotation);   // __NONSECURE_ENTRY
         tempCodes.add("int32_t " + functionName + "_callback(NonSecure_funcptr *callback){");
         tempCodes.add("\t" + functionName + "_pf = (NonSecure_funcptr)cmse_nsfptr_create(callback);");
         tempCodes.add("\treturn 0;");
@@ -210,10 +208,10 @@ public class TZProject {
         for (Block block : blocks) {
             for (int j = 0; j < block.codes.size(); j++) {
                 String code = block.codes.get(j);
-                if (code.contains(proAnnotation)) {
+                if (code.contains(proAnnotation)) { // protect annotation @TrustZone
                     VariableInfo variableInfo = new VariableInfo(code);
                     block.codes.set(j, code.replace(proAnnotation, ""));
-                    variables.add(variableInfo);
+                    variables.add(variableInfo);    // variables need to be  protected
 //                    System.out.println(variableInfo);
                 }
             }
@@ -221,7 +219,7 @@ public class TZProject {
     }
 
 
-    private void addRW(VariableInfo variableInfo) {
+    private void addRW(VariableInfo variableInfo) { // read & write
         int voidIndex = 0;
         for (; voidIndex < secureCodes.size(); voidIndex++) {
             if (!secureCodes.get(voidIndex).name.equals("void")) break;
@@ -235,7 +233,7 @@ public class TZProject {
         secureCodes.add(voidIndex, new Block("void", 2, RWCodes));
     }
 
-    private void addIncDec(String code, VariableInfo vi) {
+    private void addIncDec(String code, VariableInfo vi) {  // increment or decrement
         String[] names = {"inc_left_", "inc_right", "dec_left_", "dec_right"};
         String[] bodies = {vi.type + " inc_left_" + vi.name + "(){++" + vi.name + ";return " + vi.name + ";}",
                 vi.type + " inc_right_" + vi.name + "(){++" + vi.name + ";return " + vi.name + "-1;}",
@@ -262,7 +260,7 @@ public class TZProject {
                     String variable = vi.name;
                     if (CharacterTools.containsVariable(code, variable)) {
                         VariableTools variableTools = new VariableTools();
-                        code = variableTools.replaceOperator(code, variable);
+                        code = variableTools.replaceOperator(code, variable);   // transform variable statement
                         block.codes.set(i, code);
                         if (code.contains("inc_") || code.contains("dec_")) {
                             addIncDec(code, vi);
@@ -287,7 +285,7 @@ public class TZProject {
         for (Block secure : secureCodes) {
             for (int i = 0; i < secure.codes.size(); i++) {
                 String code = secure.codes.get(i);
-                if (code.contains("TZ_")) {
+                if (code.contains("TZ_")) { // original API
                     code = code.replace("TZ_", "TZ_s_");
                     secure.codes.set(i, code);
                 }
@@ -301,7 +299,7 @@ public class TZProject {
             if (find) break;
             for (int i = 0; i < block.codes.size(); i++) {
                 String code = block.codes.get(i);
-                if (code.contains("TZ.h")) {
+                if (code.contains("TZ.h")) {    // TZ.h ==> TZ_s.h + TZ_ns.h
                     block.codes.set(i, code.replace("TZ.h", "TZ_s.h"));
                     find = true;
                     break;
@@ -313,7 +311,7 @@ public class TZProject {
         nonSecureCodes.add(0, new Block("void", 2, code));
     }
 
-    private void changePeripheralHeaders() {
+    private void changePeripheralHeaders() {    // elastic headers
         boolean GPIO_use = false, UART_use = false;
         for (Block block : blocks) {
             for (String code : block.codes) {
@@ -363,14 +361,14 @@ public class TZProject {
             if (code.contains("_callback(")) {
                 continue;
             }
-            String t = code.trim();
-            if(t.contains(" ")){
+            String t = code.trim(); // delete blank of front and back
+            if(t.contains(" ")){    // int a; <== temp variable
                 out=true;
                 break;
             }
             if (!t.contains("(")) continue;
             String name = t.substring(0, t.indexOf("("));
-            if(name.equals("while")||name.equals("for")||name.equals("if")) {
+            if(name.equals("while")||name.equals("for")||name.equals("if")) {   // something will affect stop point
                 out=true;
                 break;
             }
@@ -392,7 +390,7 @@ public class TZProject {
             }
         }
         if (out) {
-            sMainCode.add("    TZ_Boot_Init(NEXT_BOOT_BASE);");
+            sMainCode.add("    TZ_Boot_Init(NEXT_BOOT_BASE);"); // from ns to s
         }
         sMainCode.add("}");
         secureCodes.add(new Block("main", 2, sMainCode));
@@ -452,10 +450,6 @@ public class TZProject {
         System.out.println("---nonSecure:");
         for (Block block : nonSecureCodes) {
             for (String code : block.codes) System.out.println(code);
-        }
-        System.out.println("peripherals:");
-        for (String p : peripherals) {
-            System.out.print(p + ",");
         }
         System.out.println();
         System.out.println("variables:");

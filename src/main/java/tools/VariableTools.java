@@ -28,7 +28,7 @@ public class VariableTools {
     public String replaceOperator(String statement, String variable) {
         String res = statement;
         if (CharacterTools.containsVariable(statement,variable)) {
-            if(statement.contains("++")||statement.contains("--")){
+            if(statement.contains("++")||statement.contains("--")){ // a++ ++a a-- --a
                 statement= Pattern.compile(variable+"\\s*\\+\\+").matcher(statement)
                         .replaceAll("inc_right_"+variable+"()");
                 statement= Pattern.compile(variable+"\\s*--").matcher(statement)
@@ -72,7 +72,6 @@ public class VariableTools {
                 res = replaceRead(statement, variable);
             }
         }
-
         return res;
     }
 }

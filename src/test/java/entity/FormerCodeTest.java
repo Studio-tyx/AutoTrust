@@ -21,11 +21,11 @@ public class FormerCodeTest {
     public void testTransferCode() throws IOException {
         FormerCode formerCode=new FormerCode();
         formerCode.init("D:\\Languages\\Maven\\AutoTrust\\src\\main\\resources\\test_code1.txt");
-        List<String> peripherals = formerCode.getPeripherals();
-        System.out.println("peripheral:");
-        for(String p:peripherals){
-            System.out.println(p);
-        }
+//        List<String> peripherals = formerCode.getPeripherals();
+//        System.out.println("peripheral:");
+//        for(String p:peripherals){
+//            System.out.println(p);
+//        }
         System.out.println();
         List<String> codes = formerCode.getCodes();
         for(String code:codes){

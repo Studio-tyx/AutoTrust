@@ -89,6 +89,40 @@ public class TZProjectTest {
     @Test
     public void testBlinky() throws IOException {
         FormerCode formerCode=new FormerCode();
+        String path="D:\\Languages\\Maven\\AutoTrust\\code example\\Blinky\\";
+        formerCode.init(path+"main.c");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.writeCode(path);
+        //tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+
+    @Test
+    public void testDebug() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        String path="D:\\Languages\\Maven\\AutoTrust\\code example\\Debug\\";
+        formerCode.init(path+"main.c");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.writeCode(path);
+        //tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+    
+    @Test
+    public void testAudio() throws IOException {
+        FormerCode formerCode=new FormerCode();
         String path="D:\\Languages\\Maven\\AutoTrust\\code example\\Audio\\";
         formerCode.init(path+"main.c");
         TZProject tzProject=new TZProject();
@@ -102,4 +136,39 @@ public class TZProjectTest {
         //tzProject.showProject();
         //tzProject.showBlocks();
     }
+
+    @Test
+    public void testAES() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        String path="D:\\Languages\\Maven\\AutoTrust\\code example\\AES\\";
+        formerCode.init(path+"main.c");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.writeCode(path);
+        //tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+
+    @Test
+    public void testWifi() throws IOException {
+        FormerCode formerCode=new FormerCode();
+        String path="D:\\Languages\\Maven\\AutoTrust\\code example\\WiFi\\";
+        formerCode.init(path+"main.c");
+        TZProject tzProject=new TZProject();
+        tzProject.initFunctions(formerCode);
+        tzProject.identifyFunction();
+        tzProject.separateSecureFunction();
+        tzProject.identifyVariables();
+        tzProject.separateVariables();
+        tzProject.change();
+        tzProject.writeCode(path);
+        //tzProject.showProject();
+        //tzProject.showBlocks();
+    }
+
 }

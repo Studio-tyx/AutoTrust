@@ -21,7 +21,7 @@ void TZ_UART_set_secure(int uart[]){
 void TZ_UART_init(int uart, int32_t baud_rate){
 	if(uart<=5&&uart>=0){
 		if(UART_security[0]){
-			TZ_UART_secure_init(uart,baud_rate);
+			TZ_s_UART_init(uart,baud_rate);
 		}
 		else{
 			(UART0_NS+uart*0x1000UL)->BAUD = UART_BAUD_MODE2 | UART_BAUD_MODE2_DIVIDER(__HIRC, baud_rate);
@@ -33,7 +33,7 @@ void TZ_UART_init(int uart, int32_t baud_rate){
 void TZ_UART_write_char(int uart, char ch){
 	if(uart<=5&&uart>=0){
 		if(UART_security[uart]){
-			TZ_UART_secure_write_char(uart, ch);
+			TZ_s_UART_write_char(uart, ch);
 		}
 		else{
 			while(UART0_NS->FIFOSTS & UART_FIFOSTS_TXFULL_Msk){}
@@ -59,7 +59,7 @@ void TZ_UART_write(int uart, const char* str){
 
 int TZ_UART_available(int uart){
 	if(uart<=5&&uart>=0){
-		if(UART_security[uart]) return TZ_UART_secure_available(uart);
+		if(UART_security[uart]) return TZ_s_UART_available(uart);
 		else return ((UART0->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0);
 		}
 	else return -1;
@@ -67,7 +67,7 @@ int TZ_UART_available(int uart){
 
 char TZ_UART_read_char(int uart){
 	if(uart<=5&&uart>=0){
-		if(UART_security[uart]) return TZ_UART_secure_read_char(uart);
+		if(UART_security[uart]) return TZ_s_UART_read_char(uart);
 		else{
 			while((UART0_NS+uart*0x1000UL)->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk);
 			return ((char)(UART0_NS+uart*0x1000UL)->DAT);
